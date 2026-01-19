@@ -26,4 +26,14 @@ export interface Feed {
   
     type: "INITIAL" | "SCHEDULED";
   }
+
+
+  export interface FeedAiContext{
+    companyName: string;
+    symbol: string;
+    priceChangePercent: number;
+    direction: 'UP' | 'DOWN' | 'FLAT';
+    newsHeadlines: string[];
+    newsSummary: string; 
+  }
   
