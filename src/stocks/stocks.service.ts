@@ -4,9 +4,12 @@ import { UpdateStockDto } from './dto/update-stock.dto';
 import { StockApiService } from 'src/integrations/stock-api/stock-api.service';
 import { NewsApiService } from 'src/integrations/news-api/news-api.service';
 
-@Injectable()
+@Injectable()    
 export class StocksService {
-  constructor(private stockApiService: StockApiService, private readonly newsAPiService: NewsApiService) {    
+  constructor(
+    private stockApiService: StockApiService, 
+    private readonly newsAPiService: NewsApiService,
+  ) {    
   }
   create(createStockDto: CreateStockDto) {
     return 'This action adds a new stock';

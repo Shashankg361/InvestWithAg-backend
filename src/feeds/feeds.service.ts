@@ -19,7 +19,7 @@ export class FeedsService {
             stockContext:this.normalizeStock(stockData),
             newsContext:this.normalizeNews(news.articles),
             isInitial:true
-        }
+        } 
         //return this.feedsAiService.generateFeed(param);
         return this.feedsAiService.generateFeedAiContext(param);
     }
