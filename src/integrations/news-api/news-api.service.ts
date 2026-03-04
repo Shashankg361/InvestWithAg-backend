@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 
+
+export interface NewsResponse {
+  success: boolean;
+  count: number;
+  articles: any[];
+}
+
 @Injectable()
 export class NewsApiService {
   private RAPID_API_KEY = process.env.RAPIDAPI_KEY;
@@ -10,26 +17,37 @@ export class NewsApiService {
   /* ================================
      PUBLIC METHOD (ONLY ONE YOU CALL)
   ================================= */
-  async getAllStockNews(symbols: string) {
+  async getAllStockNews(symbols: string): Promise<NewsResponse>{
+    const formattedSymbol = this.formatSymbol(symbols);
+
     const [yahoo, marketaux, finnhub] = await Promise.all([
-      this.getYahooNews(symbols),
-      this.getMarketauxNews(symbols),
-      this.getFinnhubNews(symbols),
+      this.getYahooNews(formattedSymbol),
+      this.getMarketauxNews(formattedSymbol),
+      this.getFinnhubNews(formattedSymbol),
     ]);
 
     const combined = [...yahoo, ...marketaux, ...finnhub];
 
+    const filtered = combined.filter(article =>
+      this.isRelevant(article, symbols)
+    );
+
     // 🚨 Deduplication logic will be added later here
-     const deduped = this.dedupeNews(combined);
+     const deduped = this.dedupeNews(filtered)
+     .sort((a, b) =>
+      new Date(b.publishedAt).getTime() -
+      new Date(a.publishedAt).getTime()
+    )
+    .slice(0, 15);
 
     return {
       success: true,
       count: deduped.length,
       articles: deduped,
     };
-  }
+  } 
 
-  /* ================================
+  /* ================================ 
      YAHOO FINANCE (RapidAPI)
   ================================= */
   private async getYahooNews(symbols: string) {
@@ -57,7 +75,7 @@ export class NewsApiService {
         publishedAt: item.pubDate,
         tickers: item.relatedTickers,
         image: item.thumbnail?.resolutions?.[0]?.url ?? null,
-      }));
+      })) .filter(article => this.isRecent(article.publishedAt));
     } catch (err) {
       console.log('Yahoo news error:', err);
       return [];
@@ -76,6 +94,7 @@ export class NewsApiService {
             symbols,
             language: 'en',
             filter_entities: true,
+            limit: 10,
             api_token: this.MARKETAUX_KEY,
           },
         }
@@ -102,22 +121,27 @@ export class NewsApiService {
   private async getFinnhubNews(symbols: string) {
     try {
       const symbol = symbols.split(',')[0]; // Finnhub supports single symbol
-      const today = new Date().toISOString().split('T')[0];
 
-      console.log({
-        symbol,
-        from: '2024-01-01',
-        to: today,
-        tokenPresent: !!this.FINNHUB_KEY,
-        token:this.FINNHUB_KEY
-      });
+      const to = new Date();
+      const fromDate = new Date();
+      fromDate.setDate(to.getDate() - 2);
+
+      const from = fromDate.toISOString().split('T')[0];
+      const today = to.toISOString().split('T')[0];
+      // console.log({
+      //   symbol,
+      //   from: '2024-01-01',
+      //   to: today,
+      //   tokenPresent: !!this.FINNHUB_KEY,
+      //   token:this.FINNHUB_KEY
+      // });
 
       const { data } = await axios.get(
         `https://finnhub.io/api/v1/company-news`,
         {
           params: {
             symbol,
-            from: '2024-01-01',
+            from,
             to: today,
             token: this.FINNHUB_KEY,
           },
@@ -188,5 +212,31 @@ export class NewsApiService {
       return 'unknown';
     }
   }  
+
+private isRecent(date: string, hours = 48): boolean {
+  if (!date) return false;
+
+  const published = new Date(date);
+  const now = new Date();
+
+  const diff = (now.getTime() - published.getTime()) / (1000 * 60 * 60);
+  return diff <= hours;
+}
+
+private formatSymbol(symbol: string): string {
+  if (!symbol.includes('.')) {
+    return `${symbol}.NS`; // adjust if needed
+  }
+  return symbol;
+}
+
+private isRelevant(article: any, symbol: string): boolean {
+  const title = article.title?.toLowerCase() || '';
+  const summary = article.summary?.toLowerCase() || '';
+  const s = symbol.toLowerCase();
+
+  return title.includes(s) || summary.includes(s);
+}
+
 
 }

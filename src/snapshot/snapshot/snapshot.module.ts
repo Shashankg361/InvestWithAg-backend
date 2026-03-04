@@ -12,6 +12,7 @@ import { News } from 'src/entites/News.entity';
     NewsApiModule,
     TypeOrmModule.forFeature([PriceSnapshot,News])
   ],
-  providers: [SnapshotService]
+  providers: [SnapshotService],
+  exports: [SnapshotService]
 })
 export class SnapshotModule {}

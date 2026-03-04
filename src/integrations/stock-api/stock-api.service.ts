@@ -40,6 +40,12 @@ export class StockApiService {
       };
     } catch (err) {
       console.log(err);
+
+      if (err.response?.status === 429) {
+        console.error('Rate limit exceeded');
+        return null; // DO NOT throw
+      }
+
       throw new NotFoundException('Yahoo Finance API blocked this quote');
     }
   }
@@ -114,6 +120,5 @@ async getStockChart(symbol: string) {
 }
 
   
-
 }
 

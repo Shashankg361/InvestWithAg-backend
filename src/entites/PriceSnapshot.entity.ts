@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity('price_snapshot')
+@Entity('price_snapshots')
 export class PriceSnapshot {
 
   @PrimaryGeneratedColumn()
@@ -14,4 +14,10 @@ export class PriceSnapshot {
 
   @Column({ name: 'snapshot_time', type: 'timestamp' })
   snapshotTime: Date;
+
+  @Column({ name: 'change_percent', type: 'decimal', nullable: true })
+  changePercent: number;
+  
+  @Column({ type: 'bigint', nullable: true })
+  volume: number;
 }
